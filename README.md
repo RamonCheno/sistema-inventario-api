@@ -1,6 +1,6 @@
 # Sistema de Inventario y Ventas — API REST
 
-API REST en .NET Core que reemplaza al backend WCF SOAP (`sistema-inventario-ws`) del mismo dominio: productos, proveedores, clientes, ventas y control de stock.
+API REST en .NET para gestionar productos, proveedores, clientes, ventas y control de stock.
 
 ## Stack
 
@@ -10,4 +10,4 @@ API REST en .NET Core que reemplaza al backend WCF SOAP (`sistema-inventario-ws`
 
 ## Estado
 
-En construcción — migración desde el contrato SOAP `IInventarioService` a endpoints REST equivalentes.
+En construcción.
