@@ -1,4 +1,41 @@
+## Visual Studio ##
+.vs/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+## Compilados y artefactos de build ##
 bin/
 obj/
-.vs/
-*.user
+publish/
+
+## Rider / VS Code ##
+.idea/
+*.iml
+.vscode/*
+!.vscode/extensions.json
+
+## Resultados de pruebas ##
+[Tt]est[Rr]esult*/
+*.trx
+*.coverage
+*.coveragexml
+
+## NuGet ##
+*.nupkg
+*.snupkg
+**/[Pp]ackages/*
+!**/[Pp]ackages/build/
+
+## Configuracion local / secretos (nunca subir) ##
+appsettings.*.local.json
+secrets.json
+*.pfx
+
+## Sistema operativo ##
+.DS_Store
+Thumbs.db
+
+## Logs ##
+*.log
