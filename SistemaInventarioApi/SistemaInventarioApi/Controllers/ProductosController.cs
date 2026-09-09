@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using SistemaInventarioApi.Data;
 using SistemaInventarioApi.DTOs;
@@ -18,6 +19,7 @@ namespace SistemaInventarioApi.Controllers
         }
 
         [HttpGet]
+
         public async Task<ActionResult<IEnumerable<ProductoDto>>> GetProductos()
         {
             var productos = await _context.Productos
@@ -37,7 +39,8 @@ namespace SistemaInventarioApi.Controllers
         }
 
         [HttpGet("{id}")]
-        public async Task<ActionResult<ProductoDto>> GetProducto(int id)
+        public async Task<ActionResult<ProductoDto>> GetProducto(
+            [SistemaInventarioApi.Validation.PositiveId] int id)
         {
             var producto = await _context.Productos.FindAsync(id);
             if (producto == null) return NotFound();
@@ -55,6 +58,7 @@ namespace SistemaInventarioApi.Controllers
         }
 
         [HttpPost]
+        [Authorize(Roles = Roles.GestionInventario)]
         public async Task<ActionResult<ProductoDto>> CreateProducto(CreateProductoDto dto)
         {
             var categoriaExiste = await _context.Categorias.AnyAsync(c => c.Id == dto.CategoriaId);
@@ -65,7 +69,7 @@ namespace SistemaInventarioApi.Controllers
 
             var producto = new Producto
             {
-                Nombre = dto.Nombre,
+                Nombre = dto.Nombre.Trim(),
                 Precio = dto.Precio,
                 Stock = dto.Stock,
                 StockMinimo = dto.StockMinimo,
@@ -91,7 +95,10 @@ namespace SistemaInventarioApi.Controllers
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateProducto(int id, UpdateProductoDto dto)
+        [Authorize(Roles = Roles.GestionInventario)]
+        public async Task<IActionResult> UpdateProducto(
+            [SistemaInventarioApi.Validation.PositiveId] int id,
+            UpdateProductoDto dto)
         {
             var producto = await _context.Productos.FindAsync(id);
             if (producto == null) return NotFound();
@@ -102,7 +109,7 @@ namespace SistemaInventarioApi.Controllers
             var proveedorExiste = await _context.Proveedores.AnyAsync(p => p.Id == dto.ProveedorId);
             if (!proveedorExiste) return BadRequest($"No existe el proveedor con Id {dto.ProveedorId}.");
 
-            producto.Nombre = dto.Nombre;
+            producto.Nombre = dto.Nombre.Trim();
             producto.Precio = dto.Precio;
             producto.Stock = dto.Stock;
             producto.StockMinimo = dto.StockMinimo;
@@ -114,7 +121,9 @@ namespace SistemaInventarioApi.Controllers
         }
 
         [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteProducto(int id)
+        [Authorize(Roles = Roles.GestionInventario)]
+        public async Task<IActionResult> DeleteProducto(
+            [SistemaInventarioApi.Validation.PositiveId] int id)
         {
             var producto = await _context.Productos.FindAsync(id);
             if (producto == null) return NotFound();

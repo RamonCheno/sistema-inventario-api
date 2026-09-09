@@ -14,10 +14,10 @@ namespace SistemaInventarioApi.Models
 
         public int VentaId { get; set; }
         //[ForeignKey("Venta")]
-        public Venta Venta { get; set; }
+        public Venta Venta { get; set; } = null!;
 
         public int ProductoId { get; set; }
         //[ForeignKey("Producto")] 
-        public Producto Producto { get; set; }
+        public Producto Producto { get; set; } = null!;
     }
 }

@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using SistemaInventarioApi.Data;
 using SistemaInventarioApi.DTOs;
@@ -7,6 +8,7 @@ using SistemaInventarioApi.Models;
 namespace SistemaInventarioApi.Controllers
 {
     [Route("api/[controller]")]
+    [Authorize(Roles = Roles.GestionComercial)]
     [ApiController]
     public class VentasController : ControllerBase
     {
@@ -42,7 +44,8 @@ namespace SistemaInventarioApi.Controllers
         }
 
         [HttpGet("{id}")]
-        public async Task<ActionResult<VentaDto>> GetVenta(int id)
+        public async Task<ActionResult<VentaDto>> GetVenta(
+            [SistemaInventarioApi.Validation.PositiveId] int id)
         {
             var venta = await _context.Ventas
                 .Include(v => v.Detalles)
@@ -130,7 +133,9 @@ namespace SistemaInventarioApi.Controllers
         }
 
         [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteVenta(int id)
+        [Authorize(Roles = Roles.Administrador)]
+        public async Task<IActionResult> DeleteVenta(
+            [SistemaInventarioApi.Validation.PositiveId] int id)
         {
             var venta = await _context.Ventas.FindAsync(id);
             if (venta == null) return NotFound();
