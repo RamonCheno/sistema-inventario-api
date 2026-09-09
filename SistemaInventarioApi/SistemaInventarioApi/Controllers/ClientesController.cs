@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using SistemaInventarioApi.Data;
 using SistemaInventarioApi.DTOs;
@@ -7,6 +8,7 @@ using SistemaInventarioApi.Models;
 namespace SistemaInventarioApi.Controllers
 {
     [Route("api/[controller]")]
+    [Authorize(Roles = Roles.GestionComercial)]
     [ApiController]
     public class ClientesController : ControllerBase
     {
@@ -28,7 +30,8 @@ namespace SistemaInventarioApi.Controllers
         }
 
         [HttpGet("{id}")]
-        public async Task<ActionResult<ClienteDto>> GetCliente(int id)
+        public async Task<ActionResult<ClienteDto>> GetCliente(
+            [SistemaInventarioApi.Validation.PositiveId] int id)
         {
             var cliente = await _context.Clientes.FindAsync(id);
             if (cliente == null) return NotFound();
@@ -39,7 +42,12 @@ namespace SistemaInventarioApi.Controllers
         [HttpPost]
         public async Task<ActionResult<ClienteDto>> CreateCliente(CreateClienteDto dto)
         {
-            var cliente = new Cliente { Nombre = dto.Nombre, Email = dto.Email, Telefono = dto.Telefono };
+            var cliente = new Cliente
+            {
+                Nombre = dto.Nombre.Trim(),
+                Email = dto.Email.Trim(),
+                Telefono = dto.Telefono.Trim()
+            };
 
             _context.Clientes.Add(cliente);
             await _context.SaveChangesAsync();
@@ -49,21 +57,24 @@ namespace SistemaInventarioApi.Controllers
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateCliente(int id, UpdateClienteDto dto)
+        public async Task<IActionResult> UpdateCliente(
+            [SistemaInventarioApi.Validation.PositiveId] int id,
+            UpdateClienteDto dto)
         {
             var cliente = await _context.Clientes.FindAsync(id);
             if (cliente == null) return NotFound();
 
-            cliente.Nombre = dto.Nombre;
-            cliente.Email = dto.Email;
-            cliente.Telefono = dto.Telefono;
+            cliente.Nombre = dto.Nombre.Trim();
+            cliente.Email = dto.Email.Trim();
+            cliente.Telefono = dto.Telefono.Trim();
             await _context.SaveChangesAsync();
 
             return NoContent();
         }
 
         [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteCliente(int id)
+        public async Task<IActionResult> DeleteCliente(
+            [SistemaInventarioApi.Validation.PositiveId] int id)
         {
             var cliente = await _context.Clientes.FindAsync(id);
             if (cliente == null) return NotFound();

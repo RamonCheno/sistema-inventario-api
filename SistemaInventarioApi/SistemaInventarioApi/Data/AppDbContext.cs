@@ -17,6 +17,16 @@ namespace SistemaInventarioApi.Data
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            base.OnModelCreating(modelBuilder);
+
+            modelBuilder.Entity<Usuario>()
+                .HasIndex(usuario => usuario.Email)
+                .IsUnique();
+
+            modelBuilder.Entity<Usuario>()
+                .Property(usuario => usuario.Activo)
+                .HasDefaultValue(true);
+
             modelBuilder.Entity<Producto>()
                 .HasOne(p => p.Categoria)
                 .WithMany(c => c.Productos)

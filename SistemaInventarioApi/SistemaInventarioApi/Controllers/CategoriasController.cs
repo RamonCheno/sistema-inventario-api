@@ -3,6 +3,7 @@ using SistemaInventarioApi.Data;
 using SistemaInventarioApi.DTOs;
 using SistemaInventarioApi.Models;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authorization;
 
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
@@ -21,6 +22,7 @@ namespace SistemaInventarioApi.Controllers
 
         // GET: api/categorias
         [HttpGet]
+
         public async Task<ActionResult<IEnumerable<CategoriaDto>>> GetCategorias()
         {
             var categorias = await _context.Categorias
@@ -32,7 +34,8 @@ namespace SistemaInventarioApi.Controllers
 
         // GET: api/categorias/5
         [HttpGet("{id}")]
-        public async Task<ActionResult<CategoriaDto>> GetCategoria(int id)
+        public async Task<ActionResult<CategoriaDto>> GetCategoria(
+            [SistemaInventarioApi.Validation.PositiveId] int id)
         {
             var categoria = await _context.Categorias.FindAsync(id);
 
@@ -44,9 +47,13 @@ namespace SistemaInventarioApi.Controllers
 
         // POST: api/categorias
         [HttpPost]
+        [Authorize(Roles = Roles.GestionInventario)]
         public async Task<ActionResult<CategoriaDto>> CreateCategoria(CreateCategoriaDto dto)
         {
-            var categoria = new Categoria { Nombre = dto.Nombre };
+            var categoria = new Categoria
+            {
+                Nombre = dto.Nombre.Trim()
+            };
 
             _context.Categorias.Add(categoria);
             await _context.SaveChangesAsync();
@@ -58,14 +65,17 @@ namespace SistemaInventarioApi.Controllers
 
         // PUT: api/categorias/5
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateCategoria(int id, UpdateCategoriaDto dto)
+        [Authorize(Roles = Roles.GestionInventario)]
+        public async Task<IActionResult> UpdateCategoria(
+            [SistemaInventarioApi.Validation.PositiveId] int id,
+            UpdateCategoriaDto dto)
         {
             var categoria = await _context.Categorias.FindAsync(id);
 
             if (categoria == null)
                 return NotFound();
 
-            categoria.Nombre = dto.Nombre;
+            categoria.Nombre = dto.Nombre.Trim();
             await _context.SaveChangesAsync();
 
             return NoContent();
@@ -73,7 +83,9 @@ namespace SistemaInventarioApi.Controllers
 
         // DELETE: api/categorias/5
         [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteCategoria(int id)
+        [Authorize(Roles = Roles.GestionInventario)]
+        public async Task<IActionResult> DeleteCategoria(
+            [SistemaInventarioApi.Validation.PositiveId] int id)
         {
             var categoria = await _context.Categorias.FindAsync(id);
 

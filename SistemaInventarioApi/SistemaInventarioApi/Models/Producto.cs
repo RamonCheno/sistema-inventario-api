@@ -9,7 +9,7 @@ namespace SistemaInventarioApi.Models
         public int Id { get; set; }
 
         [Required]
-        public string Nombre { get; set; }
+        public string Nombre { get; set; } = string.Empty;
 
         [Precision(18, 2)] 
         public decimal Precio { get; set; }
@@ -17,9 +17,9 @@ namespace SistemaInventarioApi.Models
         public int StockMinimo { get; set; }
 
         public int CategoriaId { get; set; }
-        public Categoria Categoria { get; set; }
+        public Categoria Categoria { get; set; } = null!;
 
         public int ProveedorId { get; set; }
-        public Proveedor Proveedor { get; set; }
+        public Proveedor Proveedor { get; set; } = null!;
     }
 }

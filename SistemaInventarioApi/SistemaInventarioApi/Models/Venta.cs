@@ -15,8 +15,8 @@ namespace SistemaInventarioApi.Models
 
         public int ClienteId { get; set; }
         //[ForeignKey("Cliente")]
-        public Cliente Cliente { get; set; }
+        public Cliente Cliente { get; set; } = null!;
 
-        public ICollection<DetalleVenta> Detalles { get; set; }
+        public ICollection<DetalleVenta> Detalles { get; set; } = new List<DetalleVenta>();
     }
 }

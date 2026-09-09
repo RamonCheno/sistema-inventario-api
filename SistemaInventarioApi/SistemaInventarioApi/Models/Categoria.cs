@@ -8,7 +8,7 @@ namespace SistemaInventarioApi.Models
         public int Id { get; set; }
 
         [Required]
-        public string Nombre { get; set; }
-        public ICollection<Producto> Productos { get; set; }
+        public string Nombre { get; set; } = string.Empty;
+        public ICollection<Producto> Productos { get; set; } = new List<Producto>();
     }
 }

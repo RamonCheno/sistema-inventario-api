@@ -1,8 +1,9 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using SistemaInventarioApi.Data;
 using SistemaInventarioApi.DTOs;
 using SistemaInventarioApi.Models;
-using Microsoft.EntityFrameworkCore;
 
 namespace SistemaInventarioApi.Controllers
 {
@@ -28,7 +29,8 @@ namespace SistemaInventarioApi.Controllers
         }
 
         [HttpGet("{id}")]
-        public async Task<ActionResult<ProveedorDto>> GetProveedor(int id)
+        public async Task<ActionResult<ProveedorDto>> GetProveedor(
+            [SistemaInventarioApi.Validation.PositiveId] int id)
         {
             var proveedor = await _context.Proveedores.FindAsync(id);
             if (proveedor == null) return NotFound();
@@ -37,9 +39,16 @@ namespace SistemaInventarioApi.Controllers
         }
 
         [HttpPost]
+        [Authorize(Roles = Roles.GestionInventario)]
+
         public async Task<ActionResult<ProveedorDto>> CreateProveedor(CreateProveedorDto dto)
         {
-            var proveedor = new Proveedor { Nombre = dto.Nombre, Telefono = dto.Telefono, Email = dto.Email };
+            var proveedor = new Proveedor
+            {
+                Nombre = dto.Nombre.Trim(),
+                Telefono = dto.Telefono.Trim(),
+                Email = dto.Email.Trim()
+            };
 
             _context.Proveedores.Add(proveedor);
             await _context.SaveChangesAsync();
@@ -49,21 +58,27 @@ namespace SistemaInventarioApi.Controllers
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateProveedor(int id, UpdateProveedorDto dto)
+        [Authorize(Roles = Roles.GestionInventario)]
+
+        public async Task<IActionResult> UpdateProveedor(
+            [SistemaInventarioApi.Validation.PositiveId] int id,
+            UpdateProveedorDto dto)
         {
             var proveedor = await _context.Proveedores.FindAsync(id);
             if (proveedor == null) return NotFound();
 
-            proveedor.Nombre = dto.Nombre;
-            proveedor.Telefono = dto.Telefono;
-            proveedor.Email = dto.Email;
+            proveedor.Nombre = dto.Nombre.Trim();
+            proveedor.Telefono = dto.Telefono.Trim();
+            proveedor.Email = dto.Email.Trim();
             await _context.SaveChangesAsync();
 
             return NoContent();
         }
 
         [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteProveedor(int id)
+        [Authorize(Roles = Roles.GestionInventario)]
+        public async Task<IActionResult> DeleteProveedor(
+            [SistemaInventarioApi.Validation.PositiveId] int id)
         {
             var proveedor = await _context.Proveedores.FindAsync(id);
             if (proveedor == null) return NotFound();
