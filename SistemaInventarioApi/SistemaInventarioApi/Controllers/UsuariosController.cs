@@ -1,11 +1,13 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using SistemaInventarioApi.Data;
 using SistemaInventarioApi.DTOs;
 using SistemaInventarioApi.Models;
 using System.Security.Claims;
+using System.Data;
 
 namespace SistemaInventarioApi.Controllers
 {
@@ -78,6 +80,10 @@ namespace SistemaInventarioApi.Controllers
 
             var email = dto.Email.Trim();
 
+            // Validación rápida para dar feedback inmediato en el caso
+            // común. La defensa real contra la condición de carrera
+            // (dos altas concurrentes con el mismo email) es el índice
+            // único de la base de datos, capturado más abajo.
             var existe = await _context.Usuarios
                 .AnyAsync(u => u.Email == email);
 
@@ -96,7 +102,15 @@ namespace SistemaInventarioApi.Controllers
                 _passwordHasher.HashPassword(usuario, dto.Password);
 
             _context.Usuarios.Add(usuario);
-            await _context.SaveChangesAsync();
+
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateException ex) when (EsViolacionDeEmailUnico(ex))
+            {
+                return Conflict("Ya existe un usuario con ese email.");
+            }
 
             var resultado = MapUsuario(usuario);
 
@@ -111,6 +125,9 @@ namespace SistemaInventarioApi.Controllers
            [SistemaInventarioApi.Validation.PositiveId] int id,
            UpdateUsuarioEstadoDto dto)
         {
+            await using var transaction = await _context.Database
+                .BeginTransactionAsync(IsolationLevel.Serializable);
+
             var usuario = await _context.Usuarios.FindAsync(id);
 
             if (usuario == null)
@@ -128,12 +145,7 @@ namespace SistemaInventarioApi.Controllers
                 usuario.Activo &&
                 !dto.Activo)
             {
-                var administradoresActivos =
-                    await _context.Usuarios.CountAsync(u =>
-                        u.Rol == RolUsuario.Administrador &&
-                        u.Activo);
-
-                if (administradoresActivos <= 1)
+                if (await EsElUltimoAdministradorActivoAsync())
                 {
                     return BadRequest(
                         "No puedes deshabilitar al último Administrador activo.");
@@ -142,6 +154,7 @@ namespace SistemaInventarioApi.Controllers
 
             usuario.Activo = dto.Activo;
             await _context.SaveChangesAsync();
+            await transaction.CommitAsync();
 
             return Ok(MapUsuario(usuario));
         }
@@ -150,6 +163,9 @@ namespace SistemaInventarioApi.Controllers
         public async Task<IActionResult> DeleteUsuario(
             [SistemaInventarioApi.Validation.PositiveId] int id)
         {
+            await using var transaction = await _context.Database
+                .BeginTransactionAsync(IsolationLevel.Serializable);
+
             var usuario = await _context.Usuarios.FindAsync(id);
 
             if (usuario == null)
@@ -163,21 +179,17 @@ namespace SistemaInventarioApi.Controllers
                     "No puedes eliminar tu propia cuenta.");
             }
 
-            if (usuario.Rol == RolUsuario.Administrador)
+            if (usuario.Rol == RolUsuario.Administrador &&
+                usuario.Activo &&
+                await EsElUltimoAdministradorActivoAsync())
             {
-                var cantidadAdministradores =
-                    await _context.Usuarios.CountAsync(u =>
-                        u.Rol == RolUsuario.Administrador);
-
-                if (cantidadAdministradores <= 1)
-                {
-                    return BadRequest(
-                        "No puedes eliminar al último Administrador.");
-                }
+                return BadRequest(
+                    "No puedes eliminar al último Administrador activo.");
             }
 
             _context.Usuarios.Remove(usuario);
             await _context.SaveChangesAsync();
+            await transaction.CommitAsync();
 
             return NoContent();
         }
@@ -187,6 +199,25 @@ namespace SistemaInventarioApi.Controllers
             var claim = User.FindFirstValue(
                 ClaimTypes.NameIdentifier);
             return int.TryParse(claim, out var id) ? id : null;
+        }
+
+        // Códigos nativos de SQL Server para violación de índice/
+        // restricción única (2601: índice único, 2627: restricción
+        // única o de clave primaria).
+        private static bool EsViolacionDeEmailUnico(DbUpdateException ex)
+        {
+            return ex.InnerException is SqlException sqlEx
+                && (sqlEx.Number == 2601 || sqlEx.Number == 2627);
+        }
+
+        private async Task<bool> EsElUltimoAdministradorActivoAsync()
+        {
+            var administradoresActivos = await _context.Usuarios
+                .CountAsync(usuario =>
+                    usuario.Rol == RolUsuario.Administrador &&
+                    usuario.Activo);
+
+            return administradoresActivos <= 1;
         }
 
         private static UsuarioDto MapUsuario(Usuario usuario)
