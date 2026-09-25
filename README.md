@@ -130,12 +130,15 @@ ya aplicadas ni se introduce SQL plano mientras exista una alternativa segura co
 
 ## Estado del proyecto
 
-La API, autenticación, roles, Docker y colección Bruno están implementados. Pendientes principales:
+La API, autenticación, roles, validación GREEN, Docker y colección Bruno están implementados.
+La regresión completa aprobó 94 de 94 solicitudes y 114 de 114 pruebas. Pendientes principales:
 
-- Fase GREEN de validación de entradas.
 - Pruebas unitarias y de integración automatizadas.
 - Identificadores públicos UUID por etapas.
-- CI/CD y despliegue público.
+- Validación del flujo de CI y despliegue público.
+
+Consultar [CHANGELOG.md](CHANGELOG.md) para conocer los cambios funcionales y de seguridad del
+backend.
 
 Cuando se trabaja desde el orquestador, consultar su `AGENTS.md` para reglas de colaboración,
 seguridad y verificación.
@@ -156,8 +159,8 @@ La opción recomendada es levantar API, UI y SQL Server desde el repositorio orq
 docker compose up --build -d
 ```
 
-La API queda expuesta en `http://localhost:8080`. En Compose se ejecuta como Production, por lo que
-Scalar no está publicado con la configuración actual.
+La API queda expuesta en `http://localhost:8080`. Scalar se habilita explícitamente en Compose y
+queda disponible en `http://localhost:8080/scalar`.
 
 ## Pruebas
 
@@ -174,7 +177,7 @@ Incluye:
 - Códigos `400`, `401`, `403`, `404` y `409`.
 - Reglas de stock y ventas.
 - Usuarios inactivos o eliminados.
-- Casos RED para validaciones pendientes.
+- Validaciones de DTOs, parámetros de ruta y mensajes propios en español.
 - Limpieza respetando dependencias.
 
 Verificación técnica:
@@ -184,5 +187,5 @@ dotnet build
 dotnet publish -c Release
 ```
 
-No debe afirmarse que una prueba pasó si no fue ejecutada. La suite RED no debe utilizarse sobre una
-base con información importante mientras los endpoints todavía puedan persistir entradas inválidas.
+No debe afirmarse que una prueba pasó si no fue ejecutada. La colección es stateful e incluye
+eliminaciones; debe utilizarse únicamente sobre una base de datos desechable.
