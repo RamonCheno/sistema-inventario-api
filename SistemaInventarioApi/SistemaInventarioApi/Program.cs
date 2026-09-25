@@ -212,19 +212,6 @@ using (var seedScope = app.Services.CreateScope())
         ?? throw new InvalidOperationException(
             "No se configuró Admin:Email.");
 
-    // Corrección temporal para el administrador afectado
-    // por la migración AgregarEstadoUsuario.
-    var administradorExistente =
-        await db.Usuarios.FirstOrDefaultAsync(
-            usuario => usuario.Email == adminEmail);
-
-    if (administradorExistente is not null
-        && !administradorExistente.Activo)
-    {
-        administradorExistente.Activo = true;
-        await db.SaveChangesAsync();
-    }
-
     var existeAdministrador =
         await db.Usuarios.AnyAsync(
             usuario =>
