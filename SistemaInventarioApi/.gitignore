@@ -39,3 +39,6 @@ Thumbs.db
 
 ## Logs ##
 *.log
+
+## Notas de planificacion locales ##
+/tasks/
