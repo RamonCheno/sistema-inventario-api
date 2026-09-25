@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using SistemaInventarioApi.Data;
 using SistemaInventarioApi.DTOs;
 using SistemaInventarioApi.Models;
+using System.Data;
 
 namespace SistemaInventarioApi.Controllers
 {
@@ -75,6 +76,9 @@ namespace SistemaInventarioApi.Controllers
             if (dto.Detalles == null || dto.Detalles.Count == 0)
                 return BadRequest("La venta debe tener al menos un detalle.");
 
+            await using var transaction = await _context.Database
+                .BeginTransactionAsync(IsolationLevel.ReadCommitted);
+
             var clienteExiste = await _context.Clientes.AnyAsync(c => c.Id == dto.ClienteId);
             if (!clienteExiste) return BadRequest($"No existe el cliente con Id {dto.ClienteId}.");
 
@@ -94,9 +98,21 @@ namespace SistemaInventarioApi.Controllers
                     return BadRequest($"No existe el producto con Id {item.ProductoId}.");
 
                 if (producto.Stock < item.Cantidad)
-                    return BadRequest($"Stock insuficiente para '{producto.Nombre}' (disponible: {producto.Stock}, solicitado: {item.Cantidad}).");
+                    return BadRequest(
+                        $"Stock insuficiente para '{producto.Nombre}' " +
+                        $"(disponible: {producto.Stock}, solicitado: {item.Cantidad}).");
 
-                producto.Stock -= item.Cantidad;
+                var productosActualizados = await _context.Productos
+                    .Where(p => p.Id == producto.Id && p.Stock >= item.Cantidad)
+                    .ExecuteUpdateAsync(setters => setters
+                        .SetProperty(
+                            p => p.Stock,
+                            p => p.Stock - item.Cantidad));
+
+                if (productosActualizados == 0)
+                    return Conflict(
+                        $"Stock insuficiente para '{producto.Nombre}'. " +
+                        "La disponibilidad cambió mientras se registraba la venta.");
 
                 var detalle = new DetalleVenta
                 {
@@ -113,6 +129,7 @@ namespace SistemaInventarioApi.Controllers
 
             _context.Ventas.Add(venta);
             await _context.SaveChangesAsync();
+            await transaction.CommitAsync();
 
             var resultado = new VentaDto
             {
@@ -137,11 +154,28 @@ namespace SistemaInventarioApi.Controllers
         public async Task<IActionResult> DeleteVenta(
             [SistemaInventarioApi.Validation.PositiveId] int id)
         {
-            var venta = await _context.Ventas.FindAsync(id);
+            await using var transaction = await _context.Database
+                .BeginTransactionAsync(IsolationLevel.Serializable);
+
+            var venta = await _context.Ventas
+                .Include(v => v.Detalles)
+                .FirstOrDefaultAsync(v => v.Id == id);
+
             if (venta == null) return NotFound();
+
+            foreach (var detalle in venta.Detalles)
+            {
+                await _context.Productos
+                    .Where(p => p.Id == detalle.ProductoId)
+                    .ExecuteUpdateAsync(setters => setters
+                        .SetProperty(
+                            p => p.Stock,
+                            p => p.Stock + detalle.Cantidad));
+            }
 
             _context.Ventas.Remove(venta);
             await _context.SaveChangesAsync();
+            await transaction.CommitAsync();
 
             return NoContent();
         }
